@@ -21,16 +21,24 @@ public class ImageService {
     public ImageService(IFileRepository repo) {
         this.repo = repo;
     }
-
     /**
      * Implementación del upload de imágenes:
-     *  - Iterar partes "file"
-     *  - Normalizar nombre (NamePolicy.normalize)
-     *  - Validar (ImageValidator.isValid)
-     *  - Crear subcarpeta con fecha (NamePolicy.datedSubdir)
-     *  - Guardar en el repositorio
-     *  - Contar subidos/rechazados
+     * - Iterar partes "file"
+     * - Normalizar nombre (NamePolicy.normalize)
+     * - Validar (ImageValidator.isValid)
+     * - Crear subcarpeta con fecha (NamePolicy.datedSubdir)
+     * - Guardar en el repositorio
+     * - Contar subidos/rechazados
      */
+
+    public void delete(String path) throws IOException {
+        repo.delete(path);
+    }
+
+    public String save(String subdir, String filename, InputStream data) throws IOException {
+        return repo.save(subdir, filename, data);
+    }
+
     public UploadResult uploadLocalImages(Collection<Part> parts) throws IOException, ServletException {
         int ok = 0, bad = 0;
         List<String> save = new ArrayList<>();
@@ -44,20 +52,19 @@ public class ImageService {
             fileName = NamePolicy.normalize(fileName);
 
             try (InputStream in = p.getInputStream()) {
-
-                if (ImageValidator.isValid(fileName, in)) {
-
+                if (ImageValidator.isValid(p, fileName)) {
                     String subdir = NamePolicy.datedSubdir(LocalDate.now());
 
-                    repo.save(subdir, fileName, in);
+                    String storedPath;
+                    try (InputStream saveStream = p.getInputStream()) {
+                        storedPath = repo.save(subdir, fileName, saveStream);
+                    }
 
                     ok++;
-                    save.add(subdir + "/" + fileName);
+                    save.add(storedPath);
                 } else {
                     bad++;
                 }
-            } catch (Exception ex) {
-                bad++;
             }
         }
         return new UploadResult(ok, bad, save);

@@ -24,6 +24,23 @@ public class DeleteServlet extends HttpServlet {
             resp.sendError(400, "path inválido");
             return;
         }
+
+        try {
+            repo.delete(rel);
+        } catch (IOException e) {
+            resp.sendError(500, "Error al borrar: " + e.getMessage());
+            return;
+        }
+
+        String page = req.getParameter("page");
+        String size = req.getParameter("size");
+
+        StringBuilder redirect = new StringBuilder(req.getContextPath() + "/list");
+        if (page != null || size != null) {
+            redirect.append("?");
+            if (page != null) redirect.append("page=").append(page).append("&");
+            if (size != null) redirect.append("size=").append(size);
+        }
         // TODO-5: llamar repo.delete(rel) y redirigir a la página actual
         resp.sendRedirect(req.getContextPath() + "/list");
     }
